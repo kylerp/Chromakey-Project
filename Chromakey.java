@@ -25,15 +25,16 @@ import org.opencv.imgproc.*;
 
 
 
-
-public class Test
+//TODO Make cropping and chromakey be mouse based functions(click and drag an area for cropping, w/ ability to resize clicking on edges)
+//Clicking on a specific spot for the chromakey aspect will give the RGB hex for pixel clicked.
+public class Chromakey
 {
    private Timer timer;
    static String fileName ="";
    static String saveName ="";
    private JLabel lblTime;
    static boolean play = false,save = false;
-   public Test()
+   public Chromakey()
    {
 
 	    //needed to properly link the library from opencv
@@ -41,7 +42,7 @@ public class Test
 	    Mat frame = new Mat();
 	    
 	    //setting up the UI
-	    JFrame jframe = new JFrame("fileName");
+	    JFrame jframe = new JFrame("Chromakey");
 	    JPanel panel1 = new JPanel();
 	    jframe.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 	    JPanel panel2 = new JPanel();
@@ -57,7 +58,8 @@ public class Test
 	    JButton btnPlay = new JButton("Play"); 
 	    JButton btnCrop = new JButton("Crop");
 	    JButton btnSave = new JButton("Save");
-	    JButton btnGrab = new JButton("Chroma Playback");
+	    JButton chroma = new JButton("Chromakey Play");
+	    JButton btnGrab = new JButton("Frame grab");
 	    JTextField x1 = new JTextField();
 	    JTextField x2 = new JTextField();
 	    JTextField y1 = new JTextField();
@@ -76,6 +78,7 @@ public class Test
 	    panel3.setSize(1600,800);
 	    panel3.add(vidpanel);
 	    panel1.add(btnPlay);
+	    panel1.add(chroma);
 	    panel1.add(btnLoad);
 	    panel1.add(btnSave);
 	    panel1.add(btnCrop);
@@ -103,6 +106,8 @@ public class Test
 	    
         
         //button to that loads a video
+	    //opens a file viewer to choose a file to load
+	    //loads the file then displays the first frame of the video.
 	    btnLoad.addActionListener(new ActionListener()
 	    {
 	    	  public void actionPerformed(ActionEvent e)
@@ -134,6 +139,22 @@ public class Test
 	    	  }
 	    	});
 	    
+	    //chroma plays the video but keys out a color(currently only green)
+	    //given a specific tolerance it determines what greens to key out.
+	    chroma.addActionListener(new ActionListener()
+	    {
+	    	  public void actionPerformed(ActionEvent e)
+	    	  { 	
+		    		VideoCapture playVid = v1;
+		    		try {
+						removeColor(playVid,vidpanel,rect,125);
+					} catch (InterruptedException e1) {
+						e1.printStackTrace();
+					}
+
+	    	  }
+	    	});
+	       
 	    //btnGrab takes a time in seconds and displays the frame at that time, it is the basic method I am going to use
 	    //in order to display the frames of the video at the current position when i implement timeline editing with both videos
 	    //loaded
@@ -141,15 +162,7 @@ public class Test
 	    {
 	    	  public void actionPerformed(ActionEvent e)
 	    	  { 	
-	    		  	int tolerance = Integer.parseInt(frameGrab.getText());
-		    		VideoCapture playVid = v1;
-		    		try {
-						removeColor(playVid,vidpanel,rect,tolerance);
-					} catch (InterruptedException e1) {
 
-					}
-	    	  
-	    		  /*
 	    		  VideoCapture vidFrame = v1;
 	    		  Mat roi;
 	    		  Mat mat = new Mat();
@@ -160,7 +173,6 @@ public class Test
 	    		  int frameNum = Integer.parseInt(frameGrab.getText());
 	    		  
 	    		  int fps = 1000/(int) vidFrame.get(Videoio.CAP_PROP_FPS);
-	    		  //int frame = (int) (vidFrame.get(Videoio.CAP_PROP_FRAME_COUNT) / fps);
 	    		  int frame = fps * frameNum;
 	    		  System.out.println(frame + " " + fps + " "+ vidFrame.get(Videoio.CAP_PROP_FRAME_COUNT));
 	    		  vidFrame.set(Videoio.CAP_PROP_POS_FRAMES, frame);
@@ -170,10 +182,10 @@ public class Test
 	               vidpanel.setIcon(image);
 	               vidpanel.repaint();
 	           }
-   	           */
+
 	    	  }
 	    	});
-	        
+	    
 	    //opens the default file viewer to select a file to save to
 	    //creates the file if it doesnt exist or overwrites one that does exist
 	    btnSave.addActionListener(new ActionListener()
@@ -235,6 +247,8 @@ public class Test
 		    		VideoCapture playVid = v1;
 		    		try {
 						playVideo(playVid,vidpanel,rect);
+					    vidpanel.setIcon(null);;
+					    vidpanel.revalidate();
 					} catch (InterruptedException e1) {
 
 					}
@@ -243,12 +257,14 @@ public class Test
 	    
    }
 
-//saveVideo takes in the video, an area that is cropped or the whole video, and the file name it is to be saved too.   
-//currently only saves things as an mp4, not to familiar with how to convert codecs and save something as a .avi or another file type.
+//removeColor is the function that plays a video and keys out green. Currently it loads an image into the background of
+//where any green was
+//TODO incorporate videos into the background at normal speed.
 public void removeColor(VideoCapture vid, JLabel panel,Rect crop, int tolerance) throws InterruptedException{
 	
+	//getting the size of the video.
 	final Rect rect = new Rect(0,0,(int)vid.get(Videoio.CAP_PROP_FRAME_WIDTH),(int)vid.get(Videoio.CAP_PROP_FRAME_HEIGHT));   
-	Mat image = Imgcodecs.imread("C:/Users/Kyler Pittman/Mountain_View_20177.jpg", Imgcodecs.CV_LOAD_IMAGE_COLOR);
+	Mat image = Imgcodecs.imread("C:/Users/Kyler Pittman/Mountain_View_20177.jpg");
 
 	int fps = 1000/(int) vid.get(Videoio.CAP_PROP_FPS);
 	Mat frame = new Mat();
@@ -261,7 +277,6 @@ public void removeColor(VideoCapture vid, JLabel panel,Rect crop, int tolerance)
 		@Override
 		public void actionPerformed(ActionEvent e) {
 
-			// TODO Auto-generated method stub
 	        if (vid.read(frame)) {
 
 	        	for(int i = 0; i<frame.rows();i++){
@@ -278,6 +293,8 @@ public void removeColor(VideoCapture vid, JLabel panel,Rect crop, int tolerance)
 	    	    				x[2] = y[2];
 	    			    		frame.put(i,j,x);
 	    	    			}
+	    	    			//removing just a little of the green tint that is applied to everything that
+	    	    			//isnt the background.
 	    	    			else{
 	    	    				x[1] = x[1]-10;
 	    	    				frame.put(i,j,x);
@@ -306,8 +323,12 @@ public void removeColor(VideoCapture vid, JLabel panel,Rect crop, int tolerance)
     timer = new Timer(fps,action);
     timer.setInitialDelay(0);
     timer.start();
+    
 
 }
+
+//saveVideo takes in the video, an area that is cropped or the whole video, and the file name it is to be saved too.   
+//currently only saves things as an mp4
 public void saveVideo(VideoCapture vid,Rect size,String saveFile){
 	    vid.set(Videoio.CAP_PROP_POS_FRAMES, 0);
 		System.out.println("Saving to "+ saveFile + "\n");
@@ -324,8 +345,8 @@ public void saveVideo(VideoCapture vid,Rect size,String saveFile){
 	    //DIVX is the codec for mp4m, then it just needs the dimensions of the video and the fps in order to save the video
 	    //for some reason it saves videos larger than they are when they opened, im not sure why at the moment.
 	    //i.e the video im using for testing is 7.5 sec long and is 7.4 KB but it saves it at 10.4 KB
-	    //writer.open(saveFile,VideoWriter.fourcc('D', 'I', 'V', 'X'),30, rect.size(), true );
-	    writer.open(saveFile,VideoWriter.fourcc('D', 'I', 'V', 'X'),vid.get(Videoio.CAP_PROP_FPS), rect.size(), true );
+	    writer.open(saveFile,VideoWriter.fourcc('D', 'I', 'V', 'X'),30, rect.size(), true );
+	    //writer.open(saveFile,VideoWriter.fourcc('D', 'I', 'V', 'X'),vid.get(Videoio.CAP_PROP_FPS), rect.size(), true );
 		while(true){
 	        if (vid.read(frame)) {
 	        	roi = frame.submat(rect);
@@ -338,7 +359,7 @@ public void saveVideo(VideoCapture vid,Rect size,String saveFile){
 	}
 	
 //playVideo takes in a video, the panel the video is displayed to, and a rectangle for any area that might be cropped.
-
+//TODO making playback faster, currently it plays back at like 95% speed
 public void playVideo(VideoCapture vid, JLabel panel,Rect crop) throws InterruptedException{
 		
 		final Rect rect = new Rect(0,0,(int)vid.get(Videoio.CAP_PROP_FRAME_WIDTH),(int)vid.get(Videoio.CAP_PROP_FRAME_HEIGHT));   
@@ -355,7 +376,6 @@ public void playVideo(VideoCapture vid, JLabel panel,Rect crop) throws Interrupt
 			@Override
 			public void actionPerformed(ActionEvent e) {
 
-				// TODO Auto-generated method stub
 		        if (vid.read(frame)) {
 		        	Mat roi;
 		        	roi = frame.submat(rect);
@@ -366,7 +386,6 @@ public void playVideo(VideoCapture vid, JLabel panel,Rect crop) throws Interrupt
 		            try {
 						Thread.sleep(fps);
 					} catch (InterruptedException e1) {
-						// TODO Auto-generated catch block
 						e1.printStackTrace();
 					}
 		        }
@@ -377,28 +396,25 @@ public void playVideo(VideoCapture vid, JLabel panel,Rect crop) throws Interrupt
 	    timer = new Timer(fps,action);
 	    timer.setInitialDelay(0);
 	    timer.start();
+
 	}
 
 
 
 
 
-//this is code that I found that converts an opencv Mat to an image
-//for loading it to the screen. I did not wrie any of the bufferedimage code.
+//code that converts an opencv mat into an image
 public static BufferedImage Mat2BufferedImage(Mat m){
-//source: http://answers.opencv.org/question/10344/opencv-java-load-image-to-gui/
-//Fastest code
-//The output can be assigned either to a BufferedImage or to an Image
-
 int type = BufferedImage.TYPE_BYTE_GRAY;
 
 if ( m.channels() > 1 ) {
     type = BufferedImage.TYPE_3BYTE_BGR;
 }
-
+//creating a byte[] in order to store all of the 
+//pixels in the image
 int bufferSize = m.channels()*m.cols()*m.rows();
 byte [] b = new byte[bufferSize];
-m.get(0,0,b); // get all the pixels
+m.get(0,0,b);
 BufferedImage image = new BufferedImage(m.cols(),m.rows(), type);
 final byte[] targetPixels = ((DataBufferByte) image.getRaster().getDataBuffer()).getData();
 System.arraycopy(b, 0, targetPixels, 0, b.length);  
@@ -413,7 +429,7 @@ public static void main(String[] args)
         @Override
         public void run()
         {
-            new Test();
+            new Chromakey();
         }
     });
 }
