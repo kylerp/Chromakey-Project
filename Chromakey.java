@@ -38,7 +38,10 @@ public class Chromakey
    {
 
 	    //needed to properly link the library from opencv
-	    System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+	    System.load(System.getProperty("user.dir") + "/bin/opencv_java310.dll");
+	    System.load(System.getProperty("user.dir") + "/bin/opencv_ffmpeg310_64.dll");
+	    
+	    
 	    Mat frame = new Mat();
 	    
 	    //setting up the UI
@@ -52,10 +55,14 @@ public class Chromakey
 	    panel2.setLayout(new BorderLayout());
 	    panel1.setSize(1600,100);
 	    panel2.setSize(1600,900);
+	    
 	    jframe.setSize(1600,900);
        
-	    JButton btnLoad = new JButton("Load");  
-	    JButton btnPlay = new JButton("Play"); 
+	    JButton btnLoad = new JButton("Load v1");
+	    JButton btnLoad2 = new JButton("Load v2"); 
+	    JButton btnPlay = new JButton("Play");
+	    JButton btnv1 = new JButton("v1");  
+	    JButton btnv2 = new JButton("v2"); 
 	    JButton btnCrop = new JButton("Crop");
 	    JButton btnSave = new JButton("Save");
 	    JButton chroma = new JButton("Chromakey Play");
@@ -67,19 +74,30 @@ public class Chromakey
 	    JTextField frameGrab = new JTextField();
 	    Rect rect = new Rect(0,0,0,0);
 	    
-	    x1.setPreferredSize( new Dimension( 200, 24 ) );
-	    x2.setPreferredSize( new Dimension( 200, 24 ) );
-	    y1.setPreferredSize( new Dimension( 200, 24 ) );
-	    y2.setPreferredSize( new Dimension( 200, 24 ) );
-	    frameGrab.setPreferredSize( new Dimension( 200, 24 ) );
+	    x1.setPreferredSize( new Dimension( 50, 24 ) );
+	    x2.setPreferredSize( new Dimension( 50, 24 ) );
+	    y1.setPreferredSize( new Dimension( 50, 24 ) );
+	    y2.setPreferredSize( new Dimension( 50, 24 ) );
+	    frameGrab.setPreferredSize( new Dimension( 50, 24 ) );
 
 	    JLabel vidpanel = new JLabel();
 	    JPanel panel3 = new JPanel();
 	    panel3.setSize(1600,800);
+	    JPanel panel4 = new JPanel();
+	    JPanel panel5 = new JPanel();
+	    GridLayout buttons = new GridLayout(2, 1);
+	    panel4.setLayout(buttons);
+	    panel5.setLayout(buttons);
 	    panel3.add(vidpanel);
-	    panel1.add(btnPlay);
+
+	    panel4.add(btnLoad);
+	    panel4.add(btnLoad2);
+	    panel5.add(btnv1);
+	    panel5.add(btnv2);
+	    panel1.add(panel5);
+	    panel1.add(panel4);
 	    panel1.add(chroma);
-	    panel1.add(btnLoad);
+	    panel1.add(btnPlay);
 	    panel1.add(btnSave);
 	    panel1.add(btnCrop);
 
@@ -93,18 +111,18 @@ public class Chromakey
 	    panel1.add(frameGrab);
 	    panel1.add(lblTime);
 	    
-	    //creating a panel that contains the video and the
-	    //bar with buttons and putting them in the frame.
 	    panel2.add(panel3, BorderLayout.PAGE_START);
 	    panel2.add(panel1, BorderLayout.PAGE_END);
 
 	    jframe.add(panel2);
 	    jframe.setContentPane(panel2);
 	    jframe.setVisible(true);
+
+	    
    		Mat firstFrame = new Mat();
 	    VideoCapture v1 = new VideoCapture();
-	    
-        
+	    VideoCapture v2 = new VideoCapture();
+        ActiveVideo active = new ActiveVideo();
         //button to that loads a video
 	    //opens a file viewer to choose a file to load
 	    //loads the file then displays the first frame of the video.
@@ -113,7 +131,9 @@ public class Chromakey
 	    	  public void actionPerformed(ActionEvent e)
 	    	  {
 	    		   JFileChooser chooser = new JFileChooser();
+	    	       chooser.setCurrentDirectory(new File(System.getProperty("user.dir")));
 	    	       int x = chooser.showOpenDialog(null);
+
 	    	       if (x == JFileChooser.APPROVE_OPTION) {
 	    	           File file = chooser.getSelectedFile();
 	    	           if (file == null) {
@@ -122,12 +142,12 @@ public class Chromakey
 
 	    	           fileName = chooser.getSelectedFile().getAbsolutePath();
 	    	           v1.open(fileName);
-	    	           VideoCapture v1Play = v1;
 	    	       	   Mat roi;
 	 	    		   Rect rect2 = new Rect(0,0,(int)v1.get(Videoio.CAP_PROP_FRAME_WIDTH),(int)v1.get(Videoio.CAP_PROP_FRAME_HEIGHT));
-	    	           if (v1Play.read(firstFrame)) {
+	    	           if (v1.read(firstFrame)) {
 	    	           	   roi = firstFrame.submat(rect2);
 	    	               ImageIcon image = new ImageIcon(Mat2BufferedImage(roi));
+	    	               active.active = v1;
 	    	               vidpanel.setIcon(image);
 	    	               vidpanel.repaint();
 	    	           }
@@ -139,15 +159,50 @@ public class Chromakey
 	    	  }
 	    	});
 	    
+	    //same as first load, just loading second video.
+	    btnLoad2.addActionListener(new ActionListener()
+	    {
+	    	  public void actionPerformed(ActionEvent e)
+	    	  {
+	    		   JFileChooser chooser = new JFileChooser();
+	    	       chooser.setCurrentDirectory(new File(System.getProperty("user.dir")));
+	    	       int x = chooser.showOpenDialog(null);
+
+	    	       if (x == JFileChooser.APPROVE_OPTION) {
+	    	           File file = chooser.getSelectedFile();
+	    	           if (file == null) {
+	    	               return;
+	    	           }
+
+	    	           fileName = chooser.getSelectedFile().getAbsolutePath();
+	    	           v2.open(fileName);
+	    	       	   Mat roi;
+	 	    		   Rect rect2 = new Rect(0,0,(int)v2.get(Videoio.CAP_PROP_FRAME_WIDTH),(int)v2.get(Videoio.CAP_PROP_FRAME_HEIGHT));
+	    	           if (v2.read(firstFrame)) {
+	    	           	   roi = firstFrame.submat(rect2);
+	    	               ImageIcon image = new ImageIcon(Mat2BufferedImage(roi));
+	    	               active.active = v2;
+	    	               vidpanel.setIcon(image);
+	    	               vidpanel.repaint();
+	    	           }
+	 	    		  rect.x = 0;
+		    		  rect.y = 0;
+		    		  rect.width = 0;
+		    		  rect.height = 0;
+	    	       }
+	    	  }
+	    	});
 	    //chroma plays the video but keys out a color(currently only green)
 	    //given a specific tolerance it determines what greens to key out.
 	    chroma.addActionListener(new ActionListener()
 	    {
 	    	  public void actionPerformed(ActionEvent e)
 	    	  { 	
-		    		VideoCapture playVid = v1;
+
 		    		try {
-						removeColor(playVid,vidpanel,rect,125);
+						removeColor(v1,v2, vidpanel,rect,125);
+						v1.set(Videoio.CAP_PROP_POS_FRAMES, 0);
+						v2.set(Videoio.CAP_PROP_POS_FRAMES, 0);
 					} catch (InterruptedException e1) {
 						e1.printStackTrace();
 					}
@@ -172,10 +227,11 @@ public class Chromakey
 	    		  }
 	    		  int frameNum = Integer.parseInt(frameGrab.getText());
 	    		  
-	    		  int fps = 1000/(int) vidFrame.get(Videoio.CAP_PROP_FPS);
-	    		  int frame = fps * frameNum;
-	    		  System.out.println(frame + " " + fps + " "+ vidFrame.get(Videoio.CAP_PROP_FRAME_COUNT));
-	    		  vidFrame.set(Videoio.CAP_PROP_POS_FRAMES, frame);
+	    		  //int fps = 1000/(int) vidFrame.get(Videoio.CAP_PROP_FPS);
+	    		  //int frame = fps * frameNum;
+	    		  vidFrame.set(Videoio.CAP_PROP_POS_FRAMES, frameNum);
+	    		  lblTime.setText(String.format("%.2f", (vidFrame.get(Videoio.CAP_PROP_POS_MSEC)/1000)));
+
    	           if (vidFrame.read(mat)) {
 	           	   roi = mat.submat(rect2);
 	               ImageIcon image = new ImageIcon(Mat2BufferedImage(roi));
@@ -210,7 +266,7 @@ public class Chromakey
 							e1.printStackTrace();
 						}
 	    	           }	    		
-	    	           VideoCapture playVid = v1;	    		
+	    	           VideoCapture playVid = active.active;	    		
 	    	           saveVideo(playVid,rect,saveName);
 	    	           System.out.println(saveName);
 	    	           save = true;
@@ -244,30 +300,76 @@ public class Chromakey
 	    {
 	    	  public void actionPerformed(ActionEvent e)
 	    	  {
-		    		VideoCapture playVid = v1;
+
 		    		try {
-						playVideo(playVid,vidpanel,rect);
-					    vidpanel.setIcon(null);;
-					    vidpanel.revalidate();
+						playVideo(active.active,vidpanel,rect);
+						active.active.set(Videoio.CAP_PROP_POS_FRAMES, 0);
 					} catch (InterruptedException e1) {
 
 					}
 	    	  }
 	    	});
 	    
+	  //sets the first video to be the active video
+	    btnv1.addActionListener(new ActionListener()
+	    {
+	    	  public void actionPerformed(ActionEvent e)
+	    	  {
+		    		active.active = v1;
+	    	       	Mat roi;
+	    	       	Rect rect2 = new Rect(0,0,(int)v1.get(Videoio.CAP_PROP_FRAME_WIDTH),(int)v1.get(Videoio.CAP_PROP_FRAME_HEIGHT));
+		    		if (active.active.read(firstFrame)) {
+					   	   roi = firstFrame.submat(rect2);
+					       ImageIcon image = new ImageIcon(Mat2BufferedImage(roi));
+					       vidpanel.setIcon(image);
+					       vidpanel.repaint();
+					   }
+					active.active.set(Videoio.CAP_PROP_POS_FRAMES, 0);
+	    	  }
+	    	}); 
+	    
+	    //sets the second video to be the active video
+	    btnv2.addActionListener(new ActionListener()
+	    {
+	    	  public void actionPerformed(ActionEvent e)
+	    	  {
+		    		active.active = v2;
+	    	       	Mat roi;
+	    	       	Rect rect2 = new Rect(0,0,(int)v2.get(Videoio.CAP_PROP_FRAME_WIDTH),(int)v2.get(Videoio.CAP_PROP_FRAME_HEIGHT));
+		    		if (active.active.read(firstFrame)) {
+					   	   roi = firstFrame.submat(rect2);
+					       ImageIcon image = new ImageIcon(Mat2BufferedImage(roi));
+					       vidpanel.setIcon(image);
+					       vidpanel.repaint();
+					   }
+					active.active.set(Videoio.CAP_PROP_POS_FRAMES, 0);
+	    	  }
+	    	}); 
    }
-
+   
+   //classes to for data needed inside of actionlisteners
+   static class ActiveVideo
+   {
+       VideoCapture active;
+   }
+   static class Timerinfo
+   {
+       int count;
+   }
 //removeColor is the function that plays a video and keys out green. Currently it loads an image into the background of
 //where any green was
 //TODO incorporate videos into the background at normal speed.
-public void removeColor(VideoCapture vid, JLabel panel,Rect crop, int tolerance) throws InterruptedException{
+public void removeColor(VideoCapture vid,VideoCapture bgvid, JLabel panel,Rect crop, int tolerance) throws InterruptedException{
 	
 	//getting the size of the video.
 	final Rect rect = new Rect(0,0,(int)vid.get(Videoio.CAP_PROP_FRAME_WIDTH),(int)vid.get(Videoio.CAP_PROP_FRAME_HEIGHT));   
-	Mat image = Imgcodecs.imread("C:/Users/Kyler Pittman/Mountain_View_20177.jpg");
 
+	Timerinfo cnt = new Timerinfo();
+	//cnt.count = 0;
+	int interval = 2;
 	int fps = 1000/(int) vid.get(Videoio.CAP_PROP_FPS);
 	Mat frame = new Mat();
+	Mat frame2 = new Mat();
 
 	//with the way actionlisteners work in java i have to use a timer to
 	//play a video. I am looking into otherways to play it, it seems like the video
@@ -276,47 +378,65 @@ public void removeColor(VideoCapture vid, JLabel panel,Rect crop, int tolerance)
     {   
 		@Override
 		public void actionPerformed(ActionEvent e) {
-
+			
 	        if (vid.read(frame)) {
-
-	        	for(int i = 0; i<frame.rows();i++){
-	        		for(int j = 0; j<frame.cols();j++){
-	        			//x is getting the RGB of the pixel at i,j from the current frame of the video.
-	        			//y is getting the RGB of the pixel at i,j at from the image being put into the background
-	    	    		double[] x = frame.get(i,j);
-	    	    		double[] y = image.get(i, j);
-	    	    		if(x[1]>x[0] && x[1]>x[2]){
-	    	    			double z = 2 * x[1] - x[0] - x[2];
-	    	    			if(z>tolerance){
-	    	    				x[0] = y[0];
-	    	    				x[1] = y[1];
-	    	    				x[2] = y[2];
-	    			    		frame.put(i,j,x);
-	    	    			}
-	    	    			//removing just a little of the green tint that is applied to everything that
-	    	    			//isnt the background.
-	    	    			else{
-	    	    				x[1] = x[1]-10;
-	    	    				frame.put(i,j,x);
-	    	    			}
-	    	    		}
-	        		}
+	        	if(cnt.count == 0){
+	        		bgvid.read(frame2);
+		        	long start = System.nanoTime();
+		        	long end = start + interval*fps;
+		        	double[] x;
+		        	double[] y;
+		        	double z;
+		        	int i;
+		        	int j;
+		        	for(i = 0; i<frame.rows();i++){
+		        		for(j = 0; j<frame.cols();j++){
+		        			//x is getting the RGB of the pixel at i,j from the current frame of the video.
+		        			//y is getting the RGB of the pixel at i,j at from the image being put into the background
+		    	    		x = frame.get(i,j);
+		    	    		y = frame2.get(i,j);
+		    	    		if(x[1]>x[0] && x[1]>x[2]){
+		    	    			z = 2 * x[1] - x[0] - x[2];
+		    	    			if(z>tolerance){
+		    	    				x[0] = y[0];
+		    	    				x[1] = y[1];
+		    	    				x[2] = y[2];
+		    			    		frame.put(i,j,x);
+		    	    			}
+		    	    			//removing just a little of the green tint that is applied to everything that
+		    	    			//isnt the background.
+		    	    			else{
+		    	    				x[1] = x[1]-10;
+		    	    				frame.put(i,j,x);
+		    	    			}
+		    	    		}
+		        		}
+		        	}
+		        	
+		        	Mat roi;
+		        	roi = frame.submat(rect);
+		            ImageIcon image = new ImageIcon(Mat2BufferedImage(roi));
+		            panel.setIcon(image);	    
+		            panel.repaint();
+		            lblTime.setText(String.format("%.2f", (vid.get(Videoio.CAP_PROP_POS_MSEC)/1000)));
+		            long finished = (end - System.nanoTime())/1000000000;
+		            try {
+						Thread.sleep(finished);
+					} catch (InterruptedException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
+		            cnt.count++;
 	        	}
-
-	        	Mat roi;
-	        	roi = frame.submat(rect);
-	            ImageIcon image = new ImageIcon(Mat2BufferedImage(roi));
-	            panel.setIcon(image);	    
-	            panel.repaint();
-	            lblTime.setText(String.format("%.2f", (vid.get(Videoio.CAP_PROP_POS_MSEC)/1000)));
-	            try {
-					Thread.sleep(fps);
-				} catch (InterruptedException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				}
+	        	else if (cnt.count == interval){
+	        		cnt.count = 0;
+	        	}
+	        	else cnt.count++;
 	        }
-	        else timer.stop();
+	        else {
+	        	cnt.count = 0;
+	        	timer.stop();
+	        }
 		}
 
     };
@@ -342,7 +462,7 @@ public void saveVideo(VideoCapture vid,Rect size,String saveFile){
 		System.out.println(vid.get(Videoio.CAP_PROP_FOURCC));
 	    VideoWriter writer = new VideoWriter();
 	    
-	    //DIVX is the codec for mp4m, then it just needs the dimensions of the video and the fps in order to save the video
+	    //DIVX is the codec for mp4, then it just needs the dimensions of the video and the fps in order to save the video
 	    //for some reason it saves videos larger than they are when they opened, im not sure why at the moment.
 	    //i.e the video im using for testing is 7.5 sec long and is 7.4 KB but it saves it at 10.4 KB
 	    writer.open(saveFile,VideoWriter.fourcc('D', 'I', 'V', 'X'),30, rect.size(), true );
@@ -365,7 +485,7 @@ public void playVideo(VideoCapture vid, JLabel panel,Rect crop) throws Interrupt
 		final Rect rect = new Rect(0,0,(int)vid.get(Videoio.CAP_PROP_FRAME_WIDTH),(int)vid.get(Videoio.CAP_PROP_FRAME_HEIGHT));   
 
 
-		int fps = 1000/(int) vid.get(Videoio.CAP_PROP_FPS);
+		long fps = (long) ((1000/vid.get(Videoio.CAP_PROP_FPS))*1000000000);
 		Mat frame = new Mat();
 
 		//with the way actionlisteners work in java i have to use a timer to
@@ -377,15 +497,21 @@ public void playVideo(VideoCapture vid, JLabel panel,Rect crop) throws Interrupt
 			public void actionPerformed(ActionEvent e) {
 
 		        if (vid.read(frame)) {
+		        	long start = System.nanoTime();
+		        	long end = start + fps;
+
 		        	Mat roi;
 		        	roi = frame.submat(rect);
 		            ImageIcon image = new ImageIcon(Mat2BufferedImage(roi));
 		            panel.setIcon(image);	    
 		            panel.repaint();
 		            lblTime.setText(String.format("%.2f", (vid.get(Videoio.CAP_PROP_POS_MSEC)/1000)));
+		            int x = 1;
+		            long finished = (end - System.nanoTime())/1000000000;
 		            try {
-						Thread.sleep(fps);
+						Thread.sleep(finished);
 					} catch (InterruptedException e1) {
+						// TODO Auto-generated catch block
 						e1.printStackTrace();
 					}
 		        }
@@ -393,7 +519,7 @@ public void playVideo(VideoCapture vid, JLabel panel,Rect crop) throws Interrupt
 			}
 
         };
-	    timer = new Timer(fps,action);
+	    timer = new Timer((int) fps,action);
 	    timer.setInitialDelay(0);
 	    timer.start();
 
@@ -403,15 +529,13 @@ public void playVideo(VideoCapture vid, JLabel panel,Rect crop) throws Interrupt
 
 
 
-//code that converts an opencv mat into an image
+//source: http://answers.opencv.org/question/10344/opencv-java-load-image-to-gui/
+//converts an opencv Mat to a buffered image for painting into a jpanel
 public static BufferedImage Mat2BufferedImage(Mat m){
 int type = BufferedImage.TYPE_BYTE_GRAY;
-
 if ( m.channels() > 1 ) {
     type = BufferedImage.TYPE_3BYTE_BGR;
 }
-//creating a byte[] in order to store all of the 
-//pixels in the image
 int bufferSize = m.channels()*m.cols()*m.rows();
 byte [] b = new byte[bufferSize];
 m.get(0,0,b);
@@ -419,7 +543,6 @@ BufferedImage image = new BufferedImage(m.cols(),m.rows(), type);
 final byte[] targetPixels = ((DataBufferByte) image.getRaster().getDataBuffer()).getData();
 System.arraycopy(b, 0, targetPixels, 0, b.length);  
 return image;
-
 }
 
 public static void main(String[] args)
